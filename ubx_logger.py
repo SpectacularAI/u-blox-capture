@@ -19,7 +19,7 @@ UBLOX_LATLONG_SCALE = 1e-7
 UBLOX_ACC_SCALE = 1e-3
 
 
-def inputThreadFn(a_list):
+def inputThreadFn(aList):
     input()
     aList.append(True)
 
@@ -45,7 +45,7 @@ def run(args):
     print("Starting to listen for UBX packets")
     print("Press ENTER to stop recording...")
     aList = []
-    threading.Thread(target = inputThreadFn, args=(a_list,)).start()
+    threading.Thread(target = inputThreadFn, args=(aList,)).start()
     with open(outputFile, "w") as writer:
         try:
             while not aList:
