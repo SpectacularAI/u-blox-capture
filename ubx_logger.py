@@ -8,15 +8,10 @@ import os
 import threading
 
 
-parser = argparse.ArgumentParser(description="Log UBX-NAV-PVT from device to JSONL file")
+parser = argparse.ArgumentParser(description="Log UBX-NAV-* messages from device to JSONL file")
 parser.add_argument("-p", help="Serial device")
 parser.add_argument("-b", help="Baudrate", type=int, default=460800)
-parser.add_argument("-a", help="Log all message types, without this only PVT is logged", action="store_true")
 parser.add_argument("-v", help="Verbose, prints errors", action="store_true")
-
-
-UBLOX_LATLONG_SCALE = 1e-7
-UBLOX_ACC_SCALE = 1e-3
 
 
 def inputThreadFn(aList):
@@ -29,16 +24,17 @@ def parseUBX(payload):
     for field in payload._fields:
         value = getattr(payload, field)
         if type(value) != int:
-            # Flatten bit fields
+            obj = {}
             for field2 in value._fields:
-                raw[field2] = getattr(value, field2)
+                obj[field2] = getattr(value, field2)
+            raw[field] = obj
         else:
             raw[field] = value
     return raw
 
 
 def run(args):
-    outputFile = "./output/gps-" + Timestamp.now().strftime("%Y-%m-%d-%H-%M-%S") + ".jsonl"
+    outputFile = "./output/ubx-" + Timestamp.now().strftime("%Y-%m-%d-%H-%M-%S") + ".jsonl"
     os.makedirs("./output", exist_ok = True)
     device = Serial(args.p, args.b, timeout=10)
     parser = Parser([NAV_CLS])
@@ -53,31 +49,10 @@ def run(args):
                     msg, msg_name, payload = parser.receive_from(device)
                     raw = parseUBX(payload)
                     entry = {
-                        "messageType": msg_name,
-                        "original": raw
+                        "type": msg_name,
+                        "payload": raw
                     }
-                    if msg_name == "PVT": # UBX-NAV-PVT (0x01 0x07), Position Velocity Time msg
-                        # Only add time if it's valid
-                        if raw["validTime"]:
-                            # nano can be negative, so add it via Timedelta
-                            ts = Timestamp(
-                                year = raw["year"],
-                                month = raw["month"],
-                                day = raw["day"],
-                                hour = raw["hour"],
-                                minute = raw["min"],
-                                second = raw["sec"]
-                            ) + Timedelta(value = raw["nano"], unit = "nanoseconds")
-                        else:
-                            ts = None
-                        entry["time"] = ts.timestamp()
-                        entry["lat"] = raw["lat"] * UBLOX_LATLONG_SCALE
-                        entry["lon"] = raw["lon"] * UBLOX_LATLONG_SCALE
-                        entry["acc"] = raw["hAcc"] * UBLOX_ACC_SCALE
-
-                    if args.a or msg_name == "PVT":
-                        writer.write(json.dumps(entry) + "\n")
-
+                    writer.write(json.dumps(entry) + "\n")
                 except (ValueError, IOError) as err:
                     if args.v:
                         print(err)

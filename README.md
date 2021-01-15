@@ -39,3 +39,10 @@ Replace DEVICE with full device path, for example: /dev/cu.usbmodem14322301.
 ``` bash
 python ubx_logger.py -v -a -p DEVICE
 ```
+
+
+## Data
+
+From ZED-F9P_IntegrationManual_(UBX-18010802).pdf:
+
+"All the main UBX-NAV messages (and some other messages) contain an iTOW field which indicates the GPS time at which the navigation epoch occurred. Messages with the same iTOW value can be assumed to have come from the same navigation solution."
