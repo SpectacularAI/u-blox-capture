@@ -12,9 +12,9 @@ make
 
 ### Setting up the device
 
-Connect u-blox device and find what device it is. On Mac:
+Connect u-blox device and find what device it is. On Mac for example:
 ``` bash
-/dev | grep cu.usbmodem
+ls /dev | grep cu.usbmodem
 ```
 
 Next tart str2str that connects to RTK ground station and delivers information to u-blox device.
