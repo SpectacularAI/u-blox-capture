@@ -67,19 +67,22 @@ def run(args):
         try:
             msg = json.load(f.readline())
             msgType = msg["type"]
-            if  msgType == "HPPOSLLH": useHighPrecision = True
+            if msgType == "HPPOSLLH": useHighPrecision = True
             if msgType == "PVT" or msgType == "HPPOSLLH" or msgType == "TIMEUTC":
-                itow = msg["iTOW"]
+                payload = msg["payload"]
+                itow = payload["iTOW"]
                 group = itowGroups.get(itow)
                 if not group:
                     group = {"iTOW": itow}
                     itowGroups[itow] = group
-                group[msgType] = msg
+                group[msgType] = payload
         except err:
             print(err)
 
     if args.low:
         useHighPrecision = False
+
+    print("Mode useHighPrecision: {}".format(useHighPrecision))
 
     # Convert groups into GPS coordinates
     coordinates = []
