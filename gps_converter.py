@@ -8,7 +8,7 @@ import os
 import threading
 
 
-parser = argparse.ArgumentParser(description="Convert UBX-NAV-PVT and UBX-NAV-HPPOSLLH into accurate GPS coordinates")
+parser = argparse.ArgumentParser(description="Convert TIMEUTC, PVT and HPPOSLLH into accurate GPS coordinates")
 parser.add_argument("file", help="ubx JSONL file")
 parser.add_argument("-low", help="Force to use low precision location", action="store_true")
 
