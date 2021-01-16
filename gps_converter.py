@@ -1,11 +1,7 @@
 import argparse
 import json
-from serial import Serial
-from ubxtranslator.core import Parser
-from ubxtranslator.predefined import NAV_CLS
 from pandas import Timestamp, Timedelta # Use pandas time objects for nanosecond precision
 import os
-import threading
 
 
 parser = argparse.ArgumentParser(description="Convert TIMEUTC, PVT and HPPOSLLH into accurate GPS coordinates")
@@ -40,7 +36,7 @@ def extractHighPrecisionLocation(raw):
     lat = (raw["lat"] + raw["latHp"] * UBLOX_LATLON_HP_SCALE) * UBLOX_LATLON_SCALE
     lon = (raw["lon"] + raw["lonHp"] * UBLOX_LATLON_HP_SCALE) * UBLOX_LATLON_SCALE
     # Precise height in mm = hMSL + (hMSLHp * 0.1)
-    alt = (raw["hsML"] + raw["hMSLHp"] * 0.1) * MM_TO_METERS
+    alt = (raw["hMSL"] + raw["hMSLHp"] * 0.1) * MM_TO_METERS
     acc = raw["hAcc"] * MM_TO_METERS
     accV = raw["vAcc"] * MM_TO_METERS
     return (lat, lon, alt, acc, accV)
@@ -49,7 +45,7 @@ def extractHighPrecisionLocation(raw):
 def extractLocation(raw):
     lat = raw["lat"] * UBLOX_LATLON_SCALE
     lon = raw["lon"] * UBLOX_LATLON_SCALE
-    alt = raw["hsML"] * MM_TO_METERS
+    alt = raw["hMSL"] * MM_TO_METERS
     acc = raw["hAcc"] * MM_TO_METERS
     accV = raw["vAcc"] * MM_TO_METERS
     return (lat, lon, alt, acc, accV)
@@ -64,22 +60,20 @@ def run(args):
     useHighPrecision = False
     itowGroups = {}
     with open(args.file) as f:
-        try:
-            lines = f.readlines()
-            for line in lines:
-                msg = json.load(line)
-                msgType = msg["type"]
-                if msgType == "HPPOSLLH": useHighPrecision = True
-                if msgType == "PVT" or msgType == "HPPOSLLH" or msgType == "TIMEUTC":
-                    payload = msg["payload"]
-                    itow = payload["iTOW"]
-                    group = itowGroups.get(itow)
-                    if not group:
-                        group = {"iTOW": itow}
-                        itowGroups[itow] = group
-                    group[msgType] = payload
-        except err:
-            print(err)
+        lines = f.readlines()
+        for line in lines:
+            msg = json.loads(line)
+            msgType = msg["type"]
+            if msgType == "HPPOSLLH": useHighPrecision = True
+            if msgType == "PVT" or msgType == "HPPOSLLH" or msgType == "TIMEUTC":
+                payload = msg["payload"]
+                itow = payload["iTOW"]
+                group = itowGroups.get(itow)
+                if not group:
+                    group = {"iTOW": itow}
+                    itowGroups[itow] = group
+                group[msgType] = payload
+
 
     if args.low:
         useHighPrecision = False
@@ -120,7 +114,7 @@ def run(args):
             "verticalAccuracy": accV
         })
 
-    coordinates.sort(key=lambda x: x.time)
+    coordinates.sort(key=lambda x: x["time"])
 
     with open(outputFile, "w") as writer:
         for coord in coordinates:

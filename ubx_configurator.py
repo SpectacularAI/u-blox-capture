@@ -54,11 +54,11 @@ def getLayerBitfield(ram, flash):
     return res
 
 
-def printMsg(cmd):
+def msgToString(cmd):
     string = ""
     for b in cmd:
         string += "{} ".format(hex(b))
-    print(string)
+    return string
 
 
 def createMessage(messageClass, messageId, payload):
@@ -126,8 +126,9 @@ def ackListener(device, queue, shouldQuit):
                     "clsID": payload.clsID,
                     "msgID": payload.msgID
                 })
-                print(("Received: {}".format(payload)))
+                # print(("Received: {}".format(payload)))
             except (ValueError, IOError) as err:
+                # TODO: Filter out unnecesary errors and display interesting onces
                 continue
                 # print(err)
     finally:
@@ -141,7 +142,7 @@ def executeConfig(device, queue, configs, definitions):
         cmd = bytearray(ubxCfgValset(cfgKeyValue(confKey, confValue, definitions)))
         classId = cmd[2]
         msgId = cmd[3]
-        printMsg(cmd)
+        # print(msgToString(cmd))
         res = device.write(cmd)
         if res != len(cmd):
             raise Exception("Expected to send {} bytes, but sent {}".format(len(cmd), res))
@@ -152,15 +153,6 @@ def executeConfig(device, queue, configs, definitions):
 
 
 def run(args):
-    # cmd = bytearray(setRate(100))
-    # string = ""
-    # for b in cmd:
-    #     string += "{} ".format(hex(b))
-    # print(string)
-    # configs = [
-    #     {"key": "CFG-RATE-MEAS", "value": 100},
-    # ]
-
     definitions = {}
     with open("./definitions/zed-fp9-interface-description.txt") as f:
         lines = f.readlines()
@@ -186,6 +178,7 @@ def run(args):
     try:
         executeConfig(device, ackQueue, configs, definitions)
     except Exception as e:
+        print("CONFIGURATION FAILED!!!")
         print(str(e))
 
     shouldQuit.append(True)
