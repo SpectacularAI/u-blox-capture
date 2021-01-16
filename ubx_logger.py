@@ -1,8 +1,8 @@
 import argparse
 import json
 from serial import Serial
-from ubxtranslator.core import Parser
-from ubxtranslator.predefined import NAV_CLS
+from ubxtranslator.ubxtranslator.core import Parser
+from ubxtranslator.ubxtranslator.predefined import NAV_CLS
 from pandas import Timestamp, Timedelta # Use pandas time objects for nanosecond precision
 import os
 import threading

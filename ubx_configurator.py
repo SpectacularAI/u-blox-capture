@@ -1,21 +1,17 @@
 import argparse
 import json
 from serial import Serial
-from ubxtranslator.core import Parser
-from ubxtranslator.predefined import ACK_CLS
+from ubxtranslator.ubxtranslator.core import Parser
+from ubxtranslator.ubxtranslator.predefined import ACK_CLS
 from pandas import Timestamp, Timedelta # Use pandas time objects for nanosecond precision
 import os
+import threading
 
 
 parser = argparse.ArgumentParser(description="Configure u-blox device")
-parser.add_argument("-p", help="Serial device")
+parser.add_argument("device", help="Serial device")
+parser.add_argument("config", help="Config file")
 parser.add_argument("-b", help="Baudrate", type=int, default=460800)
-
-
-CFG_DICT = {
-    "CFG-RATE-MEAS": { "key": 0x30210001, "type": "U2"},
-    "CFG-RATE-NAV": { "key": 0x30210002, "type": "U2"}
-}
 
 
 class BlockingQueue(list):
@@ -37,6 +33,10 @@ class BlockingQueue(list):
             return self.pop()
 
 
+def toU1(value):
+    return value.to_bytes(1, byteorder='little')
+
+
 def toU2(value):
     return value.to_bytes(2, byteorder='little')
 
@@ -52,6 +52,13 @@ def getLayerBitfield(ram, flash):
     if flash:
         res = res | 1 << 2
     return res
+
+
+def printMsg(cmd):
+    string = ""
+    for b in cmd:
+        string += "{} ".format(hex(b))
+    print(string)
 
 
 def createMessage(messageClass, messageId, payload):
@@ -84,27 +91,28 @@ def ubxCfgValset(cfg, ram=True, flash=False):
         0, # Reserved
         0, # Reserved
     ]
-    payload.extend(cfg)
+    payload.extend(cfg) # Payload, cfg key value pairs without padding
     return createMessage(messageClass, messageId, payload)
 
 
-def cfgKeyValue(key, value):
+def cfgKeyValue(key, value, definitions):
     pair = []
-    definition = CFG_DICT[key]
+    definition = definitions[key]
+    keyId = definition[0]
+    valueType = definition[1]
     if not definition:
-        raise Exception("Unsupported config: (}".format(key))
-    pair.extend(toU4(definition["key"]))
-    if definition["type"] == 'U2':
+        raise Exception("Unsupported config: {}".format(key))
+    pair.extend(toU4(keyId))
+    # TODO: Support other types
+    if valueType == "U1":
+        pair.extend(toU1(value))
+    elif valueType == "U2":
         pair.extend(toU2(value))
-    elif definition["type"] == 'U4':
+    elif valueType == "U4":
         pair.extend(toU4(value))
     else:
-        raise Exception("Unsupported type: (}".format(value))
+        raise Exception("Unsupported type: '{}'".format(valueType))
     return pair
-
-
-def setRate(interval):
-    return ubxCfgValset(cfgKeyValue("CFG-RATE-MEAS", interval))
 
 
 def ackListener(device, queue, shouldQuit):
@@ -115,26 +123,32 @@ def ackListener(device, queue, shouldQuit):
                 msg, msg_name, payload = parser.receive_from(device)
                 queue.append({
                     "type": msg_name, # ACK or NAK
-                    "clsID": payload["clsID"],
-                    "msgID": payload["msgID"]
+                    "clsID": payload.clsID,
+                    "msgID": payload.msgID
                 })
+                print(("Received: {}".format(payload)))
             except (ValueError, IOError) as err:
-                print(err)
+                continue
+                # print(err)
     finally:
         device.close()
 
 
-def executeConfig(device, queue, configs):
+def executeConfig(device, queue, configs, definitions):
     for conf in configs:
-        cmd = bytearray(ubxCfgValset(cfgKeyValue(conf["key"], conf["value"])))
-        classId = cmd[3]
-        msgId = cmd[4]
+        confKey = conf["key"]
+        confValue = conf["value"]
+        cmd = bytearray(ubxCfgValset(cfgKeyValue(confKey, confValue, definitions)))
+        classId = cmd[2]
+        msgId = cmd[3]
+        printMsg(cmd)
         res = device.write(cmd)
         if res != len(cmd):
             raise Exception("Expected to send {} bytes, but sent {}".format(len(cmd), res))
         response = queue.waitAndPop()
-        if response["type"] != "ACK" or response["clsID"] != classId or msgId response["msgID"]:
-            raise Exception("Didn't receive correct ACK msg from device: {}".format(response))
+        if response["type"] != "ACK" or response["clsID"] != classId or response["msgID"] != msgId:
+            raise Exception("Didn't receive correct ACK msg from device: {}, was expecting: clsID={}, msgID={}".format(response, classId, msgId))
+        print("{} set to {}".format(confKey, confValue))
 
 
 def run(args):
@@ -143,34 +157,38 @@ def run(args):
     # for b in cmd:
     #     string += "{} ".format(hex(b))
     # print(string)
-    configs = [
-        {"key": "CFG-RATE-MEAS", "value": 100}
-    ]
+    # configs = [
+    #     {"key": "CFG-RATE-MEAS", "value": 100},
+    # ]
 
-    device = Serial(args.p, args.b, timeout=10)
+    definitions = {}
+    with open("./definitions/zed-fp9-interface-description.txt") as f:
+        lines = f.readlines()
+        for line in lines:
+            parts = [x.strip() for x in line.split(" ")]
+            if len(parts) != 3:
+                raise Exception("Corrupted definition: {}".format(line))
+            definitions[parts[0]] = [int(parts[1], 16), parts[2]]
+
+    configs = []
+    with open(args.config) as f:
+        lines = f.readlines()
+        for line in lines:
+            parts = [x.strip() for x in line.split(" ")]
+            if len(parts) != 2:
+                raise Exception("Corrupted config: {}".format(line))
+            configs.append({"key": parts[0], "value": int(parts[1])})
+
+    device = Serial(args.device, args.b, timeout=10)
     ackQueue = BlockingQueue()
     shouldQuit = []
     threading.Thread(target = ackListener, args=(device,ackQueue,shouldQuit)).start()
-    executeConfig(device, ackQueue, configs)
+    try:
+        executeConfig(device, ackQueue, configs, definitions)
+    except Exception as e:
+        print(str(e))
+
     shouldQuit.append(True)
-
-
-    # with open(outputFile, "w") as writer:
-    #     try:
-    #         while not aList:
-    #             try:
-    #                 msg, msg_name, payload = parser.receive_from(device)
-    #                 raw = parseUBX(payload)
-    #                 entry = {
-    #                     "type": msg_name,
-    #                     "payload": raw
-    #                 }
-    #                 writer.write(json.dumps(entry) + "\n")
-    #             except (ValueError, IOError) as err:
-    #                 if args.v:
-    #                     print(err)
-    #     finally:
-    #         device.close()
 
 
 if __name__ == "__main__":

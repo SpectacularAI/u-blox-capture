@@ -65,17 +65,19 @@ def run(args):
     itowGroups = {}
     with open(args.file) as f:
         try:
-            msg = json.load(f.readline())
-            msgType = msg["type"]
-            if msgType == "HPPOSLLH": useHighPrecision = True
-            if msgType == "PVT" or msgType == "HPPOSLLH" or msgType == "TIMEUTC":
-                payload = msg["payload"]
-                itow = payload["iTOW"]
-                group = itowGroups.get(itow)
-                if not group:
-                    group = {"iTOW": itow}
-                    itowGroups[itow] = group
-                group[msgType] = payload
+            lines = f.readlines()
+            for line in lines:
+                msg = json.load(line)
+                msgType = msg["type"]
+                if msgType == "HPPOSLLH": useHighPrecision = True
+                if msgType == "PVT" or msgType == "HPPOSLLH" or msgType == "TIMEUTC":
+                    payload = msg["payload"]
+                    itow = payload["iTOW"]
+                    group = itowGroups.get(itow)
+                    if not group:
+                        group = {"iTOW": itow}
+                        itowGroups[itow] = group
+                    group[msgType] = payload
         except err:
             print(err)
 
