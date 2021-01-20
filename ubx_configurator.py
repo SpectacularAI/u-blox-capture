@@ -12,6 +12,7 @@ parser = argparse.ArgumentParser(description="Configure u-blox device")
 parser.add_argument("device", help="Serial device")
 parser.add_argument("config", help="Config file")
 parser.add_argument("-b", help="Baudrate", type=int, default=460800)
+parser.add_argument("-flash", help="Store to flash memory in addition to ram", action="store_true")
 
 
 class BlockingQueue(list):
@@ -135,11 +136,11 @@ def ackListener(device, queue, shouldQuit):
         device.close()
 
 
-def executeConfig(device, queue, configs, definitions):
+def executeConfig(device, queue, configs, definitions, flash):
     for conf in configs:
         confKey = conf["key"]
         confValue = conf["value"]
-        cmd = bytearray(ubxCfgValset(cfgKeyValue(confKey, confValue, definitions)))
+        cmd = bytearray(ubxCfgValset(cfgKeyValue(confKey, confValue, definitions), flash=flash))
         classId = cmd[2]
         msgId = cmd[3]
         # print(msgToString(cmd))
@@ -176,7 +177,7 @@ def run(args):
     shouldQuit = []
     threading.Thread(target = ackListener, args=(device,ackQueue,shouldQuit)).start()
     try:
-        executeConfig(device, ackQueue, configs, definitions)
+        executeConfig(device, ackQueue, configs, definitions, args.flash)
     except Exception as e:
         print("CONFIGURATION FAILED!!!")
         print(str(e))
