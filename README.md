@@ -74,6 +74,13 @@ An example entry:
 
 ## Resources
 
-* C099-F9P Quick Start https://www.u-blox.com/en/docs/UBX-18052242
-* C099-F9P User Guide (with ODIN-W2 Connectivity SW) https://www.u-blox.com/en/docs/UBX-18055649
-* ZED-F9P Interface Description https://www.u-blox.com/en/docs/UBX-18010854
+* [uBlox C099-F9P Quick Start](https://www.u-blox.com/en/docs/UBX-18052242)
+* [uBlox C099-F9P User Guide](https://www.u-blox.com/en/docs/UBX-18055649)
+* [uBlox ZED-F9P Data Sheet](https://www.u-blox.com/en/docs/UBX-17051259)
+* [uBlox ZED-F9P Integration Manual](https://www.u-blox.com/sites/default/files/ZED-F9P_IntegrationManual_%28UBX-18010802%29.pdf)
+* [uBlox ZED-F9P Interface Description](https://www.u-blox.com/en/docs/UBX-18010854)
+* [uBlox Moving Base, Application Note](https://www.u-blox.com/sites/default/files/ZED-F9P-MovingBase_AppNote_%28UBX-19009093%29.pdf)
+* [uBlox GNSS Antennas](https://www.u-blox.com/sites/default/files/products/documents/GNSS-Antennas_AppNote_%28UBX-15030289%29.pdf)
+* [uBlox Ground Plane Evaluation](https://cdn.sparkfun.com/assets/0/c/0/1/c/AntennasForRTK_WhitePaper__UBX-16010559_.pdf)
+* [U-center guide](https://www.u-blox.com/en/docs/UBX-13005250)
+* [RTKLIB Documentation](http://www.rtklib.com/prog/manual_2.4.2.pdf)
