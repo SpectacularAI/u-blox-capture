@@ -66,7 +66,7 @@ An example entry:
     "time": 1610810565.79965,    # UTC time in seconds
     "lat": 60.173692026,         # Latitude
     "lon": 24.803227458,         # Longtiude
-    "altitude": 15.3108,         # Altitude in metters
+    "altitude": 15.3108,         # Altitude in meters
     "accuracy": 10.364,          # Accuracy in meters
     "verticalAccuracy": 14.836   # Vertical accuracy in meters
 }
