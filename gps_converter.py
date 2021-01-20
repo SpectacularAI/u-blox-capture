@@ -16,7 +16,7 @@ MM_TO_METERS = 1e-3
 
 
 def extractTimestamp(raw):
-    if raw["valid"]["validTime"]:
+    if raw.get("valid", {}).get("validTime") or raw.get("valid", {}).get("validUTC"):
         # nano can be negative, so add it via Timedelta
         ts = Timestamp(
             year = raw["year"],
@@ -74,20 +74,23 @@ def run(args):
                     itowGroups[itow] = group
                 group[msgType] = payload
 
-
     if args.low:
         useHighPrecision = False
 
-    print("Mode useHighPrecision: {}".format(useHighPrecision))
+    if useHighPrecision:
+        print("Found HPPOSLLH events, only using them for high precision. PVT events excluded. Use -low flag to disable.")
+    else:
+        print("Using low precision mode")
 
     # Convert groups into GPS coordinates
     coordinates = []
     for itow in itowGroups:
         group = itowGroups[itow]
         ts = None
+
         if group.get("PVT"):
             ts = extractTimestamp(group.get("PVT"))
-        if not ts and group.get("TIMEUTC"):
+        elif group.get("TIMEUTC"):
             ts = extractTimestamp(group.get("TIMEUTC"))
         if not ts:
             print("Valid timestamp missing, skipping iTOW={}".format(itow))
@@ -100,7 +103,6 @@ def run(args):
                 lat, lon, alt, acc, accV = extractLocation(group.get("HPPOSLLH"))
         elif not useHighPrecision and group.get("PVT"):
             lat, lon, alt, acc, accV = extractLocation(group.get("PVT"))
-
         if not acc:
             print("Valid location missing, skipping iTOW={}".format(itow))
             continue
