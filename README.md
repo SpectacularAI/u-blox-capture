@@ -53,7 +53,7 @@ python ubx_logger.py -v /dev/cu.usbmodem14123301
 
 ### Converting to simple GPS coordinates
 
-`gps_converter.py` is used to convert different UBX messages (PVT, TIMEUTC, HPPOSLLH) to accurate easy to use GPS coordinates.
+`gps_converter.py` is used to convert different UBX messages (PVT, TIMEUTC, HPPOSLLH) to accurate easy to use GPS coordinates. It takes the ubx-*.jsonl file created with `ubx_logger.py` as an input.
 
 ``` bash
 python gps_converter.py output/ubx-2021-01-16-17-22-16.jsonl
