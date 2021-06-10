@@ -96,6 +96,7 @@ def run(args):
             print("Valid timestamp missing, skipping iTOW={}".format(itow))
             continue
 
+        acc = None
         if group.get("HPPOSLLH"):
             if useHighPrecision:
                 lat, lon, alt, acc, accV = extractHighPrecisionLocation(group.get("HPPOSLLH"))
@@ -107,14 +108,26 @@ def run(args):
             print("Valid location missing, skipping iTOW={}".format(itow))
             continue
 
-        coordinates.append({
+        measurement = {
             "time": ts.timestamp(),
             "lat": lat,
             "lon": lon,
             "altitude": alt,
             "accuracy": acc,
             "verticalAccuracy": accV
-        })
+        }
+
+        pvt = group.get("PVT")
+        if pvt:
+            measurement["velocity"] = {
+                "north": pvt["velN"] * MM_TO_METERS,
+                "east": pvt["velE"] * MM_TO_METERS,
+                "down": pvt["velD"] * MM_TO_METERS,
+            }
+            measurement["groundSpeed"] = pvt["gSpeed"] * MM_TO_METERS
+            measurement["speedAccuracy"] = pvt["sAcc"] * MM_TO_METERS
+
+        coordinates.append(measurement)
 
     coordinates.sort(key=lambda x: x["time"])
 

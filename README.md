@@ -69,6 +69,13 @@ An example entry:
     "altitude": 15.3108,         # Altitude in meters
     "accuracy": 10.364,          # Accuracy in meters
     "verticalAccuracy": 14.836   # Vertical accuracy in meters
+    "velocity": {                # Velocity estimate in NED coordsys
+        "north": -0.028,         # Meters
+        "east": -0.056,          # Meters
+        "down": -0.024           # Meters
+    },
+    "groundSpeed": 0.063,        # 2D ground speed in meters
+    "speedAccuracy": 0.108       # Speed estimate accuracy in meters
 }
 ```
 
