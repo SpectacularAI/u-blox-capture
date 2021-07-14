@@ -51,6 +51,50 @@ def extractLocation(raw):
     return (lat, lon, alt, acc, accV)
 
 
+def buildMeasurement(group, useHighPrecision=True, itow=None):
+    ts = None
+
+    if group.get("PVT"):
+        ts = extractTimestamp(group.get("PVT"))
+    elif group.get("TIMEUTC"):
+        ts = extractTimestamp(group.get("TIMEUTC"))
+    if not ts:
+        if itow: print("Valid timestamp missing, skipping iTOW={}".format(itow))
+        return None
+
+    acc = None
+    if group.get("HPPOSLLH"):
+        if useHighPrecision:
+            lat, lon, alt, acc, accV = extractHighPrecisionLocation(group.get("HPPOSLLH"))
+        else:
+            lat, lon, alt, acc, accV = extractLocation(group.get("HPPOSLLH"))
+    elif not useHighPrecision and group.get("PVT"):
+        lat, lon, alt, acc, accV = extractLocation(group.get("PVT"))
+    if not acc:
+        if itow: print("Valid location missing, skipping iTOW={}".format(itow))
+        return None
+
+    measurement = {
+        "time": ts.timestamp(),
+        "lat": lat,
+        "lon": lon,
+        "altitude": alt,
+        "accuracy": acc,
+        "verticalAccuracy": accV
+    }
+
+    pvt = group.get("PVT")
+    if pvt:
+        measurement["velocity"] = {
+            "north": pvt["velN"] * MM_TO_METERS,
+            "east": pvt["velE"] * MM_TO_METERS,
+            "down": pvt["velD"] * MM_TO_METERS,
+        }
+        measurement["groundSpeed"] = pvt["gSpeed"] * MM_TO_METERS
+        measurement["speedAccuracy"] = pvt["sAcc"] * MM_TO_METERS
+    return measurement
+
+
 def run(args):
     inputFile = os.path.splitext(args.file)
     outputFile = inputFile[0] + "-gps" + inputFile[1]
@@ -86,48 +130,9 @@ def run(args):
     coordinates = []
     for itow in itowGroups:
         group = itowGroups[itow]
-        ts = None
-
-        if group.get("PVT"):
-            ts = extractTimestamp(group.get("PVT"))
-        elif group.get("TIMEUTC"):
-            ts = extractTimestamp(group.get("TIMEUTC"))
-        if not ts:
-            print("Valid timestamp missing, skipping iTOW={}".format(itow))
-            continue
-
-        acc = None
-        if group.get("HPPOSLLH"):
-            if useHighPrecision:
-                lat, lon, alt, acc, accV = extractHighPrecisionLocation(group.get("HPPOSLLH"))
-            else:
-                lat, lon, alt, acc, accV = extractLocation(group.get("HPPOSLLH"))
-        elif not useHighPrecision and group.get("PVT"):
-            lat, lon, alt, acc, accV = extractLocation(group.get("PVT"))
-        if not acc:
-            print("Valid location missing, skipping iTOW={}".format(itow))
-            continue
-
-        measurement = {
-            "time": ts.timestamp(),
-            "lat": lat,
-            "lon": lon,
-            "altitude": alt,
-            "accuracy": acc,
-            "verticalAccuracy": accV
-        }
-
-        pvt = group.get("PVT")
-        if pvt:
-            measurement["velocity"] = {
-                "north": pvt["velN"] * MM_TO_METERS,
-                "east": pvt["velE"] * MM_TO_METERS,
-                "down": pvt["velD"] * MM_TO_METERS,
-            }
-            measurement["groundSpeed"] = pvt["gSpeed"] * MM_TO_METERS
-            measurement["speedAccuracy"] = pvt["sAcc"] * MM_TO_METERS
-
-        coordinates.append(measurement)
+        measurement = buildMeasurement(group, useHighPrecision, itow)
+        if measurement:
+            coordinates.append(measurement)
 
     coordinates.sort(key=lambda x: x["time"])
 
