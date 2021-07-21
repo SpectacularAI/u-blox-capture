@@ -7,7 +7,7 @@ from pandas import Timestamp, Timedelta # Use pandas time objects for nanosecond
 import os
 import threading
 from gps_converter import buildMeasurement
-from ubx_logger import parseUBX, inputThreadFn
+from ubx_logger import parseUBX
 
 
 parser = argparse.ArgumentParser(description="Print UBX-NAV-* solution to stdout")
@@ -20,14 +20,14 @@ parser.add_argument("--incomplete", help="Allow printing incomplete solutions", 
 def outputSolution(solution):
     measurement = buildMeasurement(solution)
     output = [
-        measurement["time"],
+        # measurement["time"],
         measurement["lat"],
         measurement["lon"],
         measurement["altitude"],
+        measurement["verticalAccuracy"],
         measurement["accuracy"],
-        measurement["verticalAccuracy"]
     ]
-    print(','.join(str(val) for val in output))
+    print(' '.join(str(val) for val in output))
 
 
 def run(args):
@@ -36,7 +36,6 @@ def run(args):
     aList = []
     currentiTOW = -1
     currentSolution = {}
-    threading.Thread(target = inputThreadFn, args=(aList,)).start()
     try:
         while not aList:
             try:
