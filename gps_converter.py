@@ -51,6 +51,13 @@ def extractLocation(raw):
     return (lat, lon, alt, acc, accV)
 
 
+def earliestMonoTime(current, event):
+    if event and event.get("monoTime"):
+        newTime = event.get("monoTime")
+        if not current or current > newTime: return newTime
+    return current
+
+
 def buildMeasurement(group, useHighPrecision=True, itow=None):
     ts = None
 
@@ -74,8 +81,18 @@ def buildMeasurement(group, useHighPrecision=True, itow=None):
         if itow: print("Valid location missing, skipping iTOW={}".format(itow))
         return None
 
+    monoTime = None
+    monoTime = earliestMonoTime(monoTime, group.get("PVT"))
+    monoTime = earliestMonoTime(monoTime, group.get("TIMEUTC"))
+    monoTime = earliestMonoTime(monoTime, group.get("HPPOSLLH"))
+
+    if (not monoTime):
+        print("Valid couldnt find monoTime")
+        return None
+
     measurement = {
-        "time": ts.timestamp(),
+        "time": monoTime,
+        "gpsUtcTime": ts.timestamp(),
         "lat": lat,
         "lon": lon,
         "altitude": alt,
@@ -117,6 +134,7 @@ def run(args):
                     group = {"iTOW": itow}
                     itowGroups[itow] = group
                 group[msgType] = payload
+                group[msgType]["monoTime"] = msg["monoTime"]
 
     if args.low:
         useHighPrecision = False
