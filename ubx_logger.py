@@ -6,6 +6,7 @@ from ubxtranslator.ubxtranslator.predefined import NAV_CLS
 from pandas import Timestamp, Timedelta # Use pandas time objects for nanosecond precision
 import os
 import threading
+import time
 
 
 parser = argparse.ArgumentParser(description="Log UBX-NAV-* messages from device to JSONL file")
@@ -50,7 +51,8 @@ def run(args):
                     raw = parseUBX(payload)
                     entry = {
                         "type": msg_name,
-                        "payload": raw
+                        "payload": raw,
+                        "monoTime": time.monotonic()
                     }
                     writer.write(json.dumps(entry) + "\n")
                 except (ValueError, IOError) as err:
