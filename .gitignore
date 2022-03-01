@@ -128,3 +128,5 @@ dmypy.json
 # Pyre type checker
 .pyre/
 output
+start.sh
+str2str.trace

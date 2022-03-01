@@ -87,7 +87,7 @@ def buildMeasurement(group, useHighPrecision=True, itow=None):
     monoTime = earliestMonoTime(monoTime, group.get("HPPOSLLH"))
 
     if (not monoTime):
-        print("Valid couldnt find monoTime")
+        print("Couldnt find monoTime")
         return None
 
     measurement = {
