@@ -6,6 +6,7 @@ from ubxtranslator.ubxtranslator.predefined import ACK_CLS
 from pandas import Timestamp, Timedelta # Use pandas time objects for nanosecond precision
 import os
 import threading
+import time
 
 
 parser = argparse.ArgumentParser(description="Configure u-blox device")
@@ -155,6 +156,7 @@ def executeConfig(device, queue, configs, definitions, flash, skipNak):
                 raise Exception("Didn't receive correct ACK msg from device: {}, was expecting: clsID={}, msgID={}".format(response, classId, msgId))
         else:
             print("{} set to {}".format(confKey, confValue))
+        time.sleep(0.1)
 
 
 def run(args):
