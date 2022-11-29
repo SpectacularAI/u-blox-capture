@@ -18,7 +18,7 @@ make
 `ubx_configurator.py` can be used to configure the u-blox device. `example/` folder contains some example configurations that can be used. `definitions/zed-fp9-interface-description.txt` contains supported configuration values. It's not comprehensive, you can add missing values from [ZED-F9P Interface Description](https://www.u-blox.com/en/docs/UBX-18010854). Use `-flash` flag store changes to on-board flash memory, making them persistent.
 
 ``` bash
-python ubx_configurator /dev/cu.usbmodem14123301 example/high_precision_gps_only.cfg
+python ubx_configurator.py /dev/cu.usbmodem14123301 example/high_precision_gps_only.cfg
 ```
 
 ### Setting up RTK
@@ -28,12 +28,14 @@ Connect u-blox device and find what device it is. On Mac for example:
 ls /dev | grep cu.usbmodem
 ```
 
+On Linux the device is usually `/dev/ttyACM0`.
+
 Next start str2str that connects to RTK ground station and delivers information to u-blox device.
 
 You need to replace following with correct variables:
 * RTK information from your provider: USER, PASS, IP, PORT, MOUNTPOINT
 * LAT/LON: Rought estimate of current position
-* DEVICE: device name, for example: cu.usbmodem14123301
+* DEVICE: device name, for example: cu.usbmodem14123301 (leave /dev/ out).
 
 ``` bash
 ./RTKLIB/app/str2str/gcc/str2str -in ntrip://USER:PASS@IP:PORT/MOUNTPOINT -p LAT LON 0.0 -n 250 -out serial://DEVICE:460800:8:n:1
