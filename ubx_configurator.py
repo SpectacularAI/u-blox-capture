@@ -13,7 +13,7 @@ parser.add_argument("device", help="Serial device")
 parser.add_argument("config", help="Config file")
 parser.add_argument("-b", help="Baudrate", type=int, default=460800)
 parser.add_argument("-flash", help="Store to flash memory in addition to ram", action="store_true")
-
+parser.add_argument("-skip_nak", help="Skip NAKs", action="store_true")
 
 class BlockingQueue(list):
     def __init__(self, *args, **kwargs):
@@ -136,7 +136,7 @@ def ackListener(device, queue, shouldQuit):
         device.close()
 
 
-def executeConfig(device, queue, configs, definitions, flash):
+def executeConfig(device, queue, configs, definitions, flash, skipNak):
     for conf in configs:
         confKey = conf["key"]
         confValue = conf["value"]
@@ -149,8 +149,12 @@ def executeConfig(device, queue, configs, definitions, flash):
             raise Exception("Expected to send {} bytes, but sent {}".format(len(cmd), res))
         response = queue.waitAndPop()
         if response["type"] != "ACK" or response["clsID"] != classId or response["msgID"] != msgId:
-            raise Exception("Didn't receive correct ACK msg from device: {}, was expecting: clsID={}, msgID={}".format(response, classId, msgId))
-        print("{} set to {}".format(confKey, confValue))
+            if response["type"] == "NAK" and skipNak:
+                print("Received NAK i.e. failed to set {}, {}: {}, was expecting: clsID={}, msgID={}".format(confKey, confValue, response, classId, msgId))
+            else:
+                raise Exception("Didn't receive correct ACK msg from device: {}, was expecting: clsID={}, msgID={}".format(response, classId, msgId))
+        else:
+            print("{} set to {}".format(confKey, confValue))
 
 
 def run(args):
@@ -177,7 +181,7 @@ def run(args):
     shouldQuit = []
     threading.Thread(target = ackListener, args=(device,ackQueue,shouldQuit)).start()
     try:
-        executeConfig(device, ackQueue, configs, definitions, args.flash)
+        executeConfig(device, ackQueue, configs, definitions, args.flash, args.skip_nak)
     except Exception as e:
         print("CONFIGURATION FAILED!!!")
         print(str(e))
