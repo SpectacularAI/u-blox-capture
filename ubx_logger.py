@@ -13,6 +13,7 @@ parser = argparse.ArgumentParser(description="Log UBX-NAV-* messages from device
 parser.add_argument("device", help="Serial device")
 parser.add_argument("-b", help="Baudrate", type=int, default=460800)
 parser.add_argument("-v", help="Verbose, prints errors", action="store_true")
+parser.add_argument("-o", help="Output file")
 
 
 def inputThreadFn(aList):
@@ -36,6 +37,7 @@ def parseUBX(payload):
 
 def run(args):
     outputFile = "./output/ubx-" + Timestamp.now().strftime("%Y-%m-%d-%H-%M-%S") + ".jsonl"
+    if args.o: outputFile = args.o
     os.makedirs("./output", exist_ok = True)
     device = Serial(args.device, args.b, timeout=10)
     parser = Parser([NAV_CLS])
