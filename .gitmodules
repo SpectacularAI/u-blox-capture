@@ -1,6 +1,6 @@
 [submodule "RTKLIB"]
 	path = RTKLIB
-	url = git@github.com:christiankaarre/RTKLIB.git
+	url = https://github.com/kaarr/RTKLIB.git
 [submodule "ubxtranslator"]
 	path = ubxtranslator
-	url = git@github.com:AaltoML/ubxtranslator.git
+	url = https://github.com/AaltoML/ubxtranslator.git
