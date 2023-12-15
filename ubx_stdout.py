@@ -29,7 +29,7 @@ def outputSolution(solution, asJson = False):
             "longitude": measurement["lon"],
             "altitude": measurement["altitude"],
             "monotonicTime":  measurement["time"],
-            "accuracy": measurement["altitude"],
+            "accuracy": measurement["accuracy"],
             "verticalAccuracy": measurement["verticalAccuracy"]
         })
     else:
